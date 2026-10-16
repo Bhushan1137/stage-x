@@ -30,18 +30,42 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
+  // Close mobile menu on desktop resize or Escape key
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) setIsOpen(false);
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const handleNavClick = (href) => {
     setIsOpen(false);
     const id = href.replace('#', '');
     const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (el) {
+      const navOffset = 70;
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
+    }
   };
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? 'glass border-b border-white/5 py-3'
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled || isOpen
+          ? 'glass-nav py-3'
           : 'bg-transparent py-5'
       }`}
     >
@@ -49,8 +73,11 @@ export default function Navbar() {
         {/* ── Logo ── */}
         <a
           href="#hero"
-          onClick={() => handleNavClick('#hero')}
-          className="flex items-center gap-2.5 group"
+          onClick={(e) => {
+            e.preventDefault();
+            handleNavClick('#hero');
+          }}
+          className="flex items-center gap-2.5 group cursor-pointer"
         >
           <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-glow-indigo">
             <Zap size={18} className="text-white" />
@@ -107,28 +134,41 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* ── Mobile Menu ── */}
+      {/* ── Mobile Menu Dropdown ── */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
         }`}
       >
-        <div className="glass border-t border-white/5 px-4 py-4 flex flex-col gap-1">
-          {NAV_LINKS.map(({ label, href }) => (
+        <div className="glass-nav-mobile px-4 py-4 flex flex-col gap-1.5 shadow-2xl">
+          {NAV_LINKS.map(({ label, href }) => {
+            const id = href.replace('#', '');
+            const isActive = activeSection === id;
+            return (
+              <button
+                key={href}
+                onClick={() => handleNavClick(href)}
+                className={`flex items-center justify-between text-left px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? 'text-white bg-indigo-500/15 border border-indigo-500/30'
+                    : 'text-white/70 hover:text-white hover:bg-white/5 active:bg-white/10'
+                }`}
+              >
+                <span>{label}</span>
+                {isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-glow-indigo" />
+                )}
+              </button>
+            );
+          })}
+          <div className="pt-2">
             <button
-              key={href}
-              onClick={() => handleNavClick(href)}
-              className="text-left px-4 py-3 text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+              onClick={() => handleNavClick('#register')}
+              className="btn-primary text-sm w-full py-3"
             >
-              {label}
+              Register Now
             </button>
-          ))}
-          <button
-            onClick={() => handleNavClick('#register')}
-            className="btn-primary text-sm mt-2"
-          >
-            Register Now
-          </button>
+          </div>
         </div>
       </div>
     </nav>
